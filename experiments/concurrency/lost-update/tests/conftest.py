@@ -3,14 +3,24 @@ from pathlib import Path
 
 import psycopg
 import pytest
-
-
-DATABASE_URL = "postgresql://lab:lab@127.0.0.1:55432/lost_update"
+from testcontainers.community.postgres import PostgresContainer
 
 
 @pytest.fixture(scope="session")
-def database_url():
-    return DATABASE_URL
+def postgres():
+    with PostgresContainer(
+        "postgres:17",
+        username="lab",
+        password="lab",
+        dbname="lost_update",
+        driver=None,
+    ) as container:
+        yield container
+
+
+@pytest.fixture(scope="session")
+def database_url(postgres):
+    return postgres.get_connection_url()
 
 
 @pytest.fixture(scope="session")
@@ -23,14 +33,23 @@ def schema(database_url):
 @pytest.fixture(autouse=True)
 def reset_data(database_url, schema):
     with psycopg.connect(database_url, connect_timeout=5) as connection:
-        connection.execute("TRUNCATE order_items, orders RESTART IDENTITY")
-        connection.execute("INSERT INTO orders (total_amount) VALUES (10.00)")
+        connection.execute("TRUNCATE order_items, orders")
+        order_id = connection.execute(
+            "INSERT INTO orders (total_amount) VALUES (10.00) RETURNING id"
+        ).fetchone()[0]
         connection.execute(
             """
             INSERT INTO order_items (order_id, product_name, quantity, unit_price)
-            VALUES (1, 'Example product', 1, 10.00)
-            """
+            VALUES (%s, 'Example product', 1, 10.00)
+            """,
+            (order_id,),
         )
+    return order_id
+
+
+@pytest.fixture
+def order_id(reset_data):
+    return reset_data
 
 
 @pytest.fixture

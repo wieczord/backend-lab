@@ -18,4 +18,14 @@ class OptimisticOrders:
         amount: Decimal,
         after_read: Callable[[], Any] | None = None,
     ) -> None:
-        raise NotImplementedError
+        current_amount, current_version = self.connection.execute(
+            "SELECT total_amount, version FROM orders WHERE id = %s", (order_id,)
+        ).fetchone()
+        if after_read is not None:
+            after_read()
+        cursor = self.connection.execute(
+            "UPDATE orders SET total_amount = %s, version = version + 1 WHERE id = %s AND version = %s",
+            (current_amount + amount, order_id, current_version),
+        )
+        if cursor.rowcount == 0:
+            raise OptimisticLockConflict("Version mismatch")

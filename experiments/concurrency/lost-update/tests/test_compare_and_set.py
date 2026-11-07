@@ -5,13 +5,15 @@ from decimal import Decimal
 from lost_update.compare_and_set import CompareAndSetConflict, CompareAndSetOrders
 
 
-def test_concurrent_increments_detect_conflict(connection_factory):
+def test_concurrent_increments_detect_conflict(connection_factory, order_id):
     barrier = threading.Barrier(2, timeout=5)
 
     def worker():
         with connection_factory() as connection:
             orders = CompareAndSetOrders(connection)
-            orders.increase_total_amount(1, Decimal("5.00"), after_read=barrier.wait)
+            orders.increase_total_amount(
+                order_id, Decimal("5.00"), after_read=barrier.wait
+            )
 
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [executor.submit(worker) for _ in range(2)]
@@ -24,3 +26,7 @@ def test_concurrent_increments_detect_conflict(connection_factory):
                 conflicts += 1
 
     assert conflicts == 1
+    with connection_factory() as connection:
+        assert connection.execute(
+            "SELECT total_amount FROM orders WHERE id = %s", (order_id,)
+        ).fetchone()[0] == Decimal("15.0")
