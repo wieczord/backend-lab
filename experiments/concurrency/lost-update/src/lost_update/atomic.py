@@ -8,7 +8,6 @@ class AtomicOrders:
         self.connection = connection
 
     def increase_total_amount(self, order_id: int, amount: Decimal) -> None:
-
         self.connection.execute(
             "UPDATE orders SET total_amount = total_amount + %s WHERE id = %s",
             (amount, order_id),

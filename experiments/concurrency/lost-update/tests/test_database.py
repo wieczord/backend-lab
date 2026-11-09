@@ -1,7 +1,19 @@
+from collections.abc import Callable
 from decimal import Decimal
 
+from psycopg import Connection
 
-def test_order_and_item_are_seeded(connection_factory, order_id):
+
+def test_order_and_item_are_seeded(
+    connection_factory: Callable[[], Connection], order_id: int
+) -> None:
+    """TODO: Describe what this test demonstrates.
+
+    Scenario: TODO — initial state and sequence of operations.
+    Expected result: TODO — final state and any errors.
+    Why: TODO — explain the mechanism behind the result.
+    """
+
     connection = connection_factory()
 
     order = connection.execute(

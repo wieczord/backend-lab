@@ -1,16 +1,26 @@
 import threading
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from decimal import Decimal
+
+from psycopg import Connection
 
 from lost_update.atomic import AtomicOrders
 
 
 def test_concurrent_increments_preserve_both_changes(
-    connection_factory, order_id
+    connection_factory: Callable[[], Connection], order_id: int
 ) -> None:
+    """TODO: Describe what this test demonstrates.
+
+    Scenario: TODO — initial state and sequence of operations.
+    Expected result: TODO — final state and any errors.
+    Why: TODO — explain the mechanism behind the result.
+    """
+
     barrier = threading.Barrier(2, timeout=5)
 
-    def worker():
+    def worker() -> None:
         with connection_factory() as connection:
             atomic = AtomicOrders(connection)
             barrier.wait()

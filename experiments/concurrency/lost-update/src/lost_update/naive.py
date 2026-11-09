@@ -1,5 +1,5 @@
+from collections.abc import Callable
 from decimal import Decimal
-from typing import Callable, Any
 
 from psycopg import Connection
 
@@ -12,7 +12,7 @@ class NaiveOrders:
         self,
         order_id: int,
         amount: Decimal,
-        after_read: Callable[[], Any] | None = None,
+        after_read: Callable[[], object] | None = None,
     ) -> None:
         current_amount = self.connection.execute(
             "SELECT total_amount FROM orders WHERE id = %s", (order_id,)
